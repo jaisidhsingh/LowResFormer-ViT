@@ -3,14 +3,18 @@ import os
 from torch.utils.data import Dataset
 from PIL import Image
 import numpy as np
+from config import TRAIN_CAP, TEST_CAP
 
 
 class AwA2Dataset(Dataset):
-	def __init__(self, images_dir, label_file, split=None, transforms=None):
+	def __init__(self, images_dir, label_file, train_cap=TRAIN_CAP, test_cap=TEST_CAP, split=None, transforms=None):
 		self.images_dir = images_dir
 		self.label_file = label_file
 		self.transforms = transforms
 		self.split = split
+		self.train_cap = train_cap
+		self.test_cap = test_cap
+
 		self.images = []
 		self.labels = []
 		with open(self.label_file, 'r') as f:
@@ -22,8 +26,8 @@ class AwA2Dataset(Dataset):
 			for f in os.listdir(self.images_dir+item+"/"):
 					self.images.append(self.images_dir+item+'/'+f)
 		
-		self.train_images = self.images[:2500]
-		self.test_images = self.images[2500:3500]
+		self.train_images = self.images[: self.train_cap]
+		self.test_images = self.images[self.train_cap : self.train_cap + self.test_cap]
 		self.dump_train_image_paths('../Animals_with_Attributes2/train_image_paths.txt')
 		self.dump_test_image_paths('../Animals_with_Attributes2/test_image_paths.txt')
 
@@ -50,18 +54,18 @@ class AwA2Dataset(Dataset):
 		if self.split == 'train':
 			img_path = self.train_images[idx]
 			cls_label = img_path.split('/')[3]
-			label = float(self.labels.index(cls_label))
+			label = int(self.labels.index(cls_label))
 			# one_hot = [0.0 for _ in range(len(self.labels))]
 			# one_hot[label] = 1.0
-			one_hot = label
+			one_hot = float(label)
 
 		if self.split == 'test':
 			img_path = self.test_images[idx]
 			cls_label = img_path.split('/')[3]
-			label = float(self.labels.index(cls_label))
+			label = int(self.labels.index(cls_label))
 			# one_hot = [0.0 for _ in range(len(self.labels))]
 			# one_hot[label] = 1.0
-			one_hot = label
+			one_hot = float(label)
 
 		one_hot = torch.tensor(one_hot)
 		image = np.array(Image.open(img_path).convert('RGB'))
