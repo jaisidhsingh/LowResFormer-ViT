@@ -4,10 +4,12 @@ from torch.utils.data import Dataset
 from PIL import Image
 import numpy as np
 from config import TRAIN_CAP, TEST_CAP
-
+import random
 
 class AwA2Dataset(Dataset):
 	def __init__(self, images_dir, label_file, train_cap=TRAIN_CAP, test_cap=TEST_CAP, split=None, transforms=None):
+		self.name = 'awa2'
+
 		self.images_dir = images_dir
 		self.label_file = label_file
 		self.transforms = transforms
@@ -25,7 +27,8 @@ class AwA2Dataset(Dataset):
 		for item in os.listdir(self.images_dir):
 			for f in os.listdir(self.images_dir+item+"/"):
 					self.images.append(self.images_dir+item+'/'+f)
-		
+
+		random.shuffle(self.images)		
 		self.train_images = self.images[: self.train_cap]
 		self.test_images = self.images[self.train_cap : self.train_cap + self.test_cap]
 		self.dump_train_image_paths('../Animals_with_Attributes2/train_image_paths.txt')
