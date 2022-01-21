@@ -1,4 +1,4 @@
-# Trix-on-Pix
+# Vision Transformer for Low-Resolution Images
 
 to train just run python train.py (from src)
 make sure your dataset is extracted in the same directory as src, meaning:
