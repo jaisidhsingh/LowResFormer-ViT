@@ -8,3 +8,6 @@ dataset = vit/Animals_with_Attributes2/
 source_code = vit/src/
 
 check src/config.py for better clarity for the same
+
+
+https://arxiv.org/pdf/1803.11320.pdf
