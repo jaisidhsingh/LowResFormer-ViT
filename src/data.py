@@ -7,7 +7,7 @@ from config import TRAIN_CAP, TEST_CAP
 import random
 
 class AwA2Dataset(Dataset):
-	def __init__(self, images_dir, label_file, train_cap=TRAIN_CAP, test_cap=TEST_CAP, split=None, transforms=None):
+	def __init__(self, images_dir, label_file, attribute_file, train_cap=TRAIN_CAP, test_cap=TEST_CAP, split=None, transforms=None):
 		self.name = 'awa2'
 
 		self.images_dir = images_dir
@@ -19,6 +19,8 @@ class AwA2Dataset(Dataset):
 
 		self.images = []
 		self.labels = []
+		self.attributes = []
+
 		with open(self.label_file, 'r') as f:
 			for line in f.readlines():
 					class_id = line.split()[1]
@@ -28,6 +30,12 @@ class AwA2Dataset(Dataset):
 			for f in os.listdir(self.images_dir+item+"/"):
 					self.images.append(self.images_dir+item+'/'+f)
 
+		with open(attribute_file, 'r') as f:
+			for line in f.readlines():
+					attributes = line.split()[1:]
+					attributes = [float(x) for x in attributes]
+					self.attributes.append(attributes)
+		
 		random.shuffle(self.images)		
 		self.train_images = self.images[: self.train_cap]
 		self.test_images = self.images[self.train_cap : self.train_cap + self.test_cap]
@@ -53,27 +61,26 @@ class AwA2Dataset(Dataset):
 
 	def __getitem__(self, idx):
 		image, one_hot = None, None
+		attribute = None
 
 		if self.split == 'train':
 			img_path = self.train_images[idx]
 			cls_label = img_path.split('/')[3]
 			label = int(self.labels.index(cls_label))
-			# one_hot = [0.0 for _ in range(len(self.labels))]
-			# one_hot[label] = 1.0
+			attribute = self.attributes[label]
 			one_hot = float(label)
 
 		if self.split == 'test':
 			img_path = self.test_images[idx]
 			cls_label = img_path.split('/')[3]
 			label = int(self.labels.index(cls_label))
-			# one_hot = [0.0 for _ in range(len(self.labels))]
-			# one_hot[label] = 1.0
+			attribute = self.attributes[label]
 			one_hot = float(label)
 
 		one_hot = torch.tensor(one_hot)
 		image = np.array(Image.open(img_path).convert('RGB'))
 		if self.transforms is not None:
 			image = self.transforms(image=image)['image']
-		return image, one_hot
+		return image, torch.tensor(attribute), one_hot
 
 

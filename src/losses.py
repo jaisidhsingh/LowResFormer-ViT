@@ -1,0 +1,34 @@
+import torch.nn as nn
+import torch
+from warnings import simplefilter
+simplefilter('ignore')
+
+
+"""
+METHOD:
+
+> Pass the softmaxed outputs as Xn into bias_loss
+> Pass torch.ones_like(Xn) as Yn into bias_loss
+> Yields sum(-log(Xn))
+"""
+
+class CustomLoss():
+	def __init__(self):
+
+		self.attr_loss = nn.KLDivLoss()
+		self.cls_loss = nn.CrossEntropyLoss()
+		self.bias_loss = nn.BCELoss(reduction='sum')
+
+	def compute(self, 
+		cls_preds, 
+		cls_targets, 
+		attr_preds, 
+		attr_targets
+	):
+
+		cls_loss = self.cls_loss(cls_preds, cls_targets)
+		attr_loss = self.attr_loss(attr_preds, attr_targets)
+		softmaxed_cls_preds = torch.softmax(cls_preds, dim=1)
+		bias_loss = self.bias_loss(softmaxed_cls_preds, torch.ones_like(softmaxed_cls_preds))
+
+		return cls_loss + attr_loss + bias_loss

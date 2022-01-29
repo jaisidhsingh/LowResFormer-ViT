@@ -46,25 +46,23 @@ def check_accuracy(model, loader, split, device):
 
 	print(f'{split.upper()} accuracy: {100 * correct / total} %')
 
-def train_fn(model, train_loader, epoch, criterion, optimizer, scaler, device):
+def train_fn(model, train_loader, epoch, criterion, optimizer, device):
 	loop = tqdm(train_loader)
 	model.train()
 	
-	for batch_idx, (inputs, targets) in enumerate(loop):
+	for batch_idx, (inputs, attributes, targets) in enumerate(loop):
 		inputs = inputs.to(device)
 		targets = targets.long().to(device)
+		attributes = attributes.to(device)
 
 		optimizer.zero_grad()
 		
 		with torch.cuda.amp.autocast():
-			predictions = model(inputs).to(device)
+			predictions = model(inputs, attributes).to(device)
 			loss = criterion(predictions, targets)
 
 		loss.backward()
-		optimizer.step()	
-		# scaler.scale(loss).backward()
-		# scaler.step(optimizer)
-		# scaler.update()
+		optimizer.step()
 
 		loop.set_postfix(loss=loss.item())
 	print(f'Loss for epoch: {epoch+1} is {loss.item()}')
