@@ -29,4 +29,4 @@ MAX_PIXEL_VALUE = 255.0
 BATCH_SIZE = 128
 EPOCHS = 50
 LEARNING_RATE = 1e-4
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+DEVICE = 'cuda'

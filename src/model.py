@@ -66,19 +66,13 @@ class PatchEmbedding(nn.Module):
                 stride=self.patch_size
             ),
             Rearrange(' b e (h) (w) -> b (h w) e'),
-        )
+        ).to(DEVICE)
 
     def forward(self, x):
         x = self.projection(x)  # shape (batch, p x p, embedding_dim)
         x = CLSToken(self.embedding_dim)(x)
-        x = PositionalEncoding(
-            self.img_size, self.patch_size, self.embedding_dim)(x)
+        x = PositionalEncoding(self.img_size, self.patch_size, self.embedding_dim)(x)
         return x   # shape: (batch, p x p + 1, embdding_dim)
-
-
-# x = torch.randn((1, 3, 32, 32))
-# p = PatchEmbedding(img_size=32, in_channels=3, patch_size=4, embedding_dim=768)
-# print(p(x).shape)
 
 
 class MultiHeadAttention(nn.Module):
@@ -95,8 +89,8 @@ class MultiHeadAttention(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.scaling = scaling
 
-        self.queries_keys_values = nn.Linear(embedding_dim, 3*embedding_dim)
-        self.projection = nn.Linear(embedding_dim, embedding_dim)
+        self.queries_keys_values = nn.Linear(embedding_dim, 3*embedding_dim, device=DEVICE)
+        self.projection = nn.Linear(embedding_dim, embedding_dim, device=DEVICE)
 
     def forward(self, x):
         splits = rearrange(self.queries_keys_values(
@@ -140,12 +134,14 @@ class MLP(nn.Module):
 
         self.mlp = nn.Linear(
             self.embedding_dim, 
-            self.embedding_dim*self.expansion_factor
+            self.embedding_dim*self.expansion_factor,
+            device=DEVICE
         )
         self.activation = nn.GELU()
         self.mlp2 = nn.Linear(
             self.embedding_dim*self.expansion_factor, 
-            self.embedding_dim
+            self.embedding_dim, 
+            device=DEVICE
         )
 
     def forward(self, x):
@@ -167,16 +163,18 @@ class Block(nn.Module):
         self.embedding_dim = embedding_dim,
         self.expansion_factor = expansion_factor
         self.dropout = dropout
+        self.layer_norm = nn.LayerNorm(self.embedding_dim, device=DEVICE)
+        self.ma = MultiHeadAttention()
 
     def forward(self, x):
         tmp = x
-        x = nn.LayerNorm(self.embedding_dim)(x)
-        x = MultiHeadAttention()(x)
+        # x = self.layer_norm(x)
+        x = self.ma(x)
         x += tmp
 
         tmp = x
-        x = nn.LayerNorm(self.embedding_dim)(x)
-        x = MLP()(x)
+        x = self.layer_norm(x)
+        x = self.ma(x)
         x += tmp
         return x
 
@@ -194,11 +192,11 @@ class VisionTransformer(nn.Module):
         self.embedding_dim = embedding_dim
         self.expansion_factor = expansion_factor
         self.dropout = dropout
+        self.block = Block()
 
     def forward(self, x):
         for _ in range(self.depth):
-            x = Block(
-                )(x)
+            x = Block()(x)
 
         return x
 
@@ -210,8 +208,8 @@ class ClassificationHead(nn.Module):
         self.num_classes = num_classes
         self.intermediate_dim = intermediate_dim
         self.projection = nn.Linear(embedding_dim*intermediate_dim, 512)
-        self.fc1 = nn.Linear(512, 128)
-        self.fc2 = nn.Linear(128, self.num_classes)
+        self.fc1 = nn.Linear(512, 128, device=DEVICE)
+        self.fc2 = nn.Linear(128, self.num_classes, device=DEVICE)
 
     def forward(self, x):
         b, n, e = x.shape
@@ -230,9 +228,9 @@ class AttributeEmbeddingNetwork(nn.Module):
         self.input_size = input_size
         self.output_size = output_size
         # self.embedding = nn.Embedding(input_size, embedding_dim)
-        self.projection = nn.Linear(input_size, 512)
-        self.fc1 = nn.Linear(512, 128)
-        self.fc2 = nn.Linear(128, output_size)
+        self.projection = nn.Linear(input_size, 512, device=DEVICE)
+        self.fc1 = nn.Linear(512, 128, device=DEVICE)
+        self.fc2 = nn.Linear(128, output_size, device=DEVICE)
     
     def forward(self, x):
         # x = self.embedding(x).long()
@@ -251,9 +249,9 @@ class AttributeHead(nn.Module):
         self.intermediate_dim = intermediate_dim
 
         dim = self.embedding_dim*self.intermediate_dim
-        self.projection = nn.Linear(dim, 512)
-        self.fc1 = nn.Linear(512, 128)
-        self.fc2 = nn.Linear(128, self.num_attr)
+        self.projection = nn.Linear(dim, 512, device=DEVICE)
+        self.fc1 = nn.Linear(512, 128, device=DEVICE)
+        self.fc2 = nn.Linear(128, self.num_attr, device=DEVICE)
 
     def forward(self, x):
         b, n, e = x.shape

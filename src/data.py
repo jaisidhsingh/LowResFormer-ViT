@@ -32,7 +32,7 @@ class AwA2Dataset(Dataset):
 
 		with open(attribute_file, 'r') as f:
 			for line in f.readlines():
-					attributes = line.split()[1:]
+					attributes = line.split()
 					attributes = [float(x) for x in attributes]
 					self.attributes.append(attributes)
 		

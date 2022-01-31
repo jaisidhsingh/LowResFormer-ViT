@@ -37,10 +37,11 @@ def check_accuracy(model, loader, split, device):
 
 	with torch.no_grad():
 		for data in loader:
-			images, labels = data
-			images, labels = images.to(device), labels.to(device)
-			outputs = model(images).to(device)
-			_, predicted = torch.max(outputs.data, 1)
+			images, attributes, labels = data
+			images, attributes, labels = images.to(device), attributes.to(device), labels.to(device)
+			outputs = model(images, attributes)
+			c = outputs[0]
+			_, predicted = torch.max(c.data, 1)
 			total += labels.size(0)
 			correct += (predicted == labels).sum().item()
 
@@ -57,9 +58,9 @@ def train_fn(model, train_loader, epoch, criterion, optimizer, device):
 
 		optimizer.zero_grad()
 		
-		with torch.cuda.amp.autocast():
-			predictions = model(inputs, attributes).to(device)
-			loss = criterion(predictions, targets)
+		predictions = model(inputs, attributes)
+		(c, ap, ae) = predictions
+		loss = criterion.compute(c, targets, ap, ae)
 
 		loss.backward()
 		optimizer.step()
