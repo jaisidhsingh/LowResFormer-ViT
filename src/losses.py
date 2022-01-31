@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch
+from config import *
 from warnings import simplefilter
 simplefilter('ignore')
 
@@ -31,4 +32,4 @@ class CustomLoss():
 		softmaxed_cls_preds = torch.softmax(cls_preds, dim=1)
 		bias_loss = self.bias_loss(softmaxed_cls_preds, torch.ones_like(softmaxed_cls_preds))
 
-		return cls_loss + attr_loss + bias_loss
+		return cls_loss + BETA*attr_loss + ALPHA*bias_loss
