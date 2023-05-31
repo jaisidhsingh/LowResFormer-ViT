@@ -1,0 +1,7 @@
+EPOCH: 0 
+TRAIN accuracy: 1.575 %
+TEST accuracy: 2.8 %
+EPOCH: 1 
+TRAIN accuracy: 1.875 %
+TEST accuracy: 1.4 %
+EPOCH: 2 
